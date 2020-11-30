@@ -6,10 +6,10 @@ defmodule WordCount do
   """
   @spec count(String.t()) :: map
   def count(sentence) do
-    tokens = Regex.scan(~r/[a-z0-9\-\p{L}]+/u, sentence |> String.downcase) |> List.flatten
+    lowercase_sentence = sentence |> String.downcase
+    tokens = Regex.scan(~r/[[:alnum:]-]+/iu, lowercase_sentence) |> List.flatten
     grouped_token = Enum.group_by(tokens, fn x -> x end, fn _x -> 1 end)
-    unique_tokens = tokens |> Enum.uniq
-    count_tokens(unique_tokens, grouped_token)
+    tokens |> Enum.uniq |> count_tokens(grouped_token)
   end
 
   defp count_tokens(tokens,result) when tokens == [] do
@@ -18,8 +18,7 @@ defmodule WordCount do
 
   defp count_tokens(tokens,result) do
     [head | tail] = tokens
-    {:ok, occurrence} = result |> Map.fetch(head)
-    new_result = result |> Map.put(head, occurrence |> Enum.sum)
+    new_result = result |> Map.update!(head, &(&1 |> Enum.sum))
     count_tokens(tail, new_result)
   end
 
