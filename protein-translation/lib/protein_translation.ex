@@ -4,17 +4,22 @@ defmodule ProteinTranslation do
   """
   @spec of_rna(String.t()) :: {atom, list(String.t())}
   def of_rna(rna) do
-    #IO.puts rna
-    codons = Regex.scan(~r/.../,rna) |> List.flatten
+    codons = Regex.scan(~r/.../, rna) |> List.flatten()
     proteins = get_proteins(codons)
-      #Enum.map(codons, fn(x) -> convert_to_protein(x) end)
 
+    error_index = proteins |> Enum.find_index(fn n -> n == "invalid codon" end)
+    stop_index = proteins |> Enum.find_index(fn n -> n == [] end)
 
-    result = proteins |> Enum.group_by(fn {x, y} -> x end, fn {x, y} -> y end)
-    (case Map.has_key?(result,:error) do
-      true -> {:error, "invalid RNA"}
-      false -> Map.fetch(result,:ok)
-    end)
+    case {error_index, stop_index} do
+      {error_index, stop_index} when stop_index == nil and error_index == nil ->
+        {:ok, proteins}
+
+      {error_index, stop_index} when stop_index != nil and error_index == nil ->
+        {:ok, proteins |> Enum.slice(0, stop_index)}
+
+      {error_index, stop_index} when error_index != nil ->
+        {:error, "invalid RNA"}
+    end
   end
 
   defp get_proteins(codons) when codons == [] do
@@ -23,16 +28,18 @@ defmodule ProteinTranslation do
 
   defp get_proteins(codons) do
     [codon | tail] = codons
-    [case convert_to_protein(codon) do
-      {:ok, "STOP"} -> []
-      {_, p} -> p
-     end
-    | get_proteins(tail)]
+
+    [
+      case convert_to_protein(codon) do
+        {:ok, "STOP"} -> []
+        {_, p} -> p
+      end
+      | get_proteins(tail)
+    ]
   end
 
   @doc """
   Given a codon, return the corresponding protein
-
   UGU -> Cysteine
   UGC -> Cysteine
   UUA -> Leucine
@@ -73,7 +80,8 @@ defmodule ProteinTranslation do
     {:ok, "Phenylalanine"}
   end
 
-  defp convert_to_protein(codeon) when codeon == "UCU" or codeon == "UCC" or codeon == "UCA" or codeon == "UCG" do
+  defp convert_to_protein(codeon)
+       when codeon == "UCU" or codeon == "UCC" or codeon == "UCA" or codeon == "UCG" do
     {:ok, "Serine"}
   end
 
@@ -96,5 +104,4 @@ defmodule ProteinTranslation do
   defp convert_to_protein(codeon) do
     {:error, "invalid codon"}
   end
-
 end
