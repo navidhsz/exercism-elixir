@@ -15,5 +15,31 @@ defmodule SecretHandshake do
   """
   @spec commands(code :: integer) :: list(String.t())
   def commands(code) do
+    handshakes = [{1, "wink"}, {2, "double blink"}, {4, "close your eyes"}, {8, "jump"}]
+    should_reverse = is_bit_set(code, 16)
+
+    result =
+      handshakes
+      |> Enum.filter(fn {bit, _str} -> is_bit_set(code, bit) end)
+      |> Enum.map(fn {_bit, str} -> str end)
+
+    case should_reverse do
+      true -> result |> Enum.reverse()
+      false -> result
+    end
+  end
+
+  defp is_bit_set(code, bit) do
+    use Bitwise
+    r = code &&& bit
+
+    case r do
+      1 -> true
+      2 -> true
+      4 -> true
+      8 -> true
+      16 -> true
+      0 -> false
+    end
   end
 end
