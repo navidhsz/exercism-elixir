@@ -24,6 +24,48 @@ defmodule Phone do
   """
   @spec number(String.t()) :: String.t()
   def number(raw) do
+    digits =
+      raw
+      |> String.codepoints()
+      |> Enum.filter(fn n ->
+        n != " " and n != "(" and n != ")" and n != "-" and n != "." and n != "+"
+      end)
+
+    is_all_digits = is_remaining_digit(digits)
+    len = length(digits)
+    [h | t] = digits
+
+    cond do
+      is_all_digits == false -> "0000000000"
+      len == 11 and h == "1" and hd(t) != "0" and hd(t) != "1" -> check_exchange_code(t)
+      len == 10 and h != "0" and h != "1" -> check_exchange_code(digits)
+      true -> "0000000000"
+    end
+  end
+
+  defp check_exchange_code(digits) do
+    exchange_code = digits |> Enum.at(3)
+
+    case exchange_code do
+      exchange_code when exchange_code == "0" or exchange_code == "1" -> "0000000000"
+      _ -> digits |> List.to_string()
+    end
+  end
+
+  defp is_remaining_digit(digits) do
+    is_number = fn n ->
+      n == "0" or n == "1" or n == "2" or n == "3" or n == "4" or n == "5" or n == "6" or n == "7" or
+        n == "8" or n == "9"
+    end
+
+    [h | t] = digits
+    is_number = is_number.(h)
+
+    case h do
+      h when is_number and t != [] -> is_remaining_digit(t)
+      h when is_number and t == [] -> true
+      _ -> false
+    end
   end
 
   @doc """
@@ -48,6 +90,13 @@ defmodule Phone do
   """
   @spec area_code(String.t()) :: String.t()
   def area_code(raw) do
+    phone_number = raw |> number()
+    [n1, n2, n3 | t] = phone_number |> String.codepoints()
+
+    case phone_number do
+      "0000000000" -> "000"
+      _ -> n1 <> n2 <> n3
+    end
   end
 
   @doc """
@@ -72,5 +121,7 @@ defmodule Phone do
   """
   @spec pretty(String.t()) :: String.t()
   def pretty(raw) do
+    [n1, n2, n3, n4, n5, n6, n7, n8, n9, n10 | t] = raw |> number() |> String.codepoints()
+    "(#{n1}#{n2}#{n3}) #{n4}#{n5}#{n6}-#{n7}#{n8}#{n9}#{n10}"
   end
 end
