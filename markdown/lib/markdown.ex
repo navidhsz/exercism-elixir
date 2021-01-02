@@ -14,16 +14,20 @@ defmodule Markdown do
   """
   @spec parse(String.t()) :: String.t()
   def parse(m) do
-    m |> String.split("\n") |> Enum.reduce("", &"#{&2}#{process(&1)}") |> patch()
+    m
+    |> String.split("\n")
+    |> Enum.reduce("", &"#{&2}#{process(&1)}")
+    |> enclose_with_ul_tag()
   end
 
-  defp process(t) do
-    case String.first(t) do
-      "#" -> t |> parse_header_md_level() |> enclose_with_header_tag()
-      "*" -> t |> parse_list_md_level()
-      _ -> t |> enclose_with_paragraph_tag()
-    end
-  end
+  defp process(t = "#" <> _),
+    do:
+      t
+      |> parse_header_md_level()
+      |> enclose_with_header_tag()
+
+  defp process(t = "*" <> _), do: t |> parse_list_md_level()
+  defp process(t), do: t |> enclose_with_paragraph_tag()
 
   defp parse_header_md_level(l) do
     [h | t] = String.split(l)
@@ -54,7 +58,9 @@ defmodule Markdown do
   end
 
   defp replace_md_with_tag(w) do
-    w |> replace_prefix_md |> replace_suffix_md
+    w
+    |> replace_prefix_md
+    |> replace_suffix_md
   end
 
   defp replace_prefix_md(w) do
@@ -73,7 +79,7 @@ defmodule Markdown do
     end
   end
 
-  defp patch(l) do
+  defp enclose_with_ul_tag(l) do
     l
     |> String.replace("<li>", "<ul><li>", global: false)
     |> String.replace_suffix("</li>", "</li></ul>")
